@@ -1,0 +1,96 @@
+asd#-------------------------example 1-----------------------
+- name: Loops
+  hosts: group
+  become: yes
+
+  tasks: 
+  - name: say hello to all
+    debug: msg="Hello {{ item }}"
+    loop:
+      - "Vasya"
+      - "Petya"
+      - "Mashsa"
+      - "Olya"
+
+  - name: looup until example
+    shell: echo -n Y  >> myfile.txt && cat myfile.txt
+    register: output
+    delay: 2
+    retries: 10
+    until: output.stdout.find("YYYY") == false
+
+  - name: print final output
+    debug:
+      var: output.stdout 
+
+  - name: install many packages
+    yum: name={{ item }} state=installed
+    loop:
+      - python
+      - apache2
+      - nginx
+
+#-------------------------example 2-----------------------
+
+- name: install apache and copy site to webserver
+  hosts: all
+  become: yes
+  
+
+  vars:
+    src_folder: /path/to/file.txt
+    dest_folder: /var/www/html
+
+
+  tasks:
+
+  - name: check version linux
+    debug: var=ansible_os_family
+
+  - block: #Block for RedHat
+  
+    - name: install apache for RedHat
+      yum: name=httpd state=latest
+ 
+    - name: start and enable apache
+      service: name=httpd state=started enabled=yes
+  
+    when: ansible_os_family == "RedHat" 
+
+  - block: #Block for Debian
+
+    - name: install apache for Debian
+      apt: name=apache2 state=latest
+
+    - name: start and enable apache
+      service: name=apache2 state=started enabled=yes 
+    
+    when: ansible_os_family == "Debian" 
+
+  - name: copy page to servers
+    copy: src={{ src_folder/{{ item }} }} dest={{ dest_folder }} mode=774
+    loop:
+      - "file1"
+      - "file2"
+      - "file4"
+      - "file5"
+    notify: 
+      - restart_apache_redhat
+      - restart_apache_debian
+
+  - name: copy folder to servers
+    copy: src={{ item }} dest={{ dest_folder }} mode=774
+    with_fileglob: "{{ src_folder }}/*.*"
+    notify: 
+      - restart_apache_redhat
+      - restart_apache_debian
+
+  handlers:
+  
+  - name: restart_apache_debian
+    service: name=apache2 state=restarted
+    when: ansible_os_family == "Debian" 
+
+  - name: restart_apache_redhat
+    service: name=https state=restarted
+    when: ansible_os_family == "RedHat" 

@@ -1,0 +1,5 @@
+ansible all -m ping
+ansible group/host -m setup - вывести всю информацию про хост
+ansible group/host -m shell -a "ls /etc" - запустить команду на хостах
+ansible group/host -m command -a "ls /etc" - выполнение команд без использования пайпов
+ansible all -m copy -a "src=/path/file.txt dest=/home/user mode=777" -b -копировать с мастера на хосты с правами sudo
